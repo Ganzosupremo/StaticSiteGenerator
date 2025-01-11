@@ -31,44 +31,54 @@ def extract_markdown_links(text:str) -> list:
 
 def split_nodes_image(old_nodes: list) -> list:
     new_nodes = []
-    for node in old_nodes:
-        if node.text_type != TextType.NORMAL:
-            new_nodes.append(node)
+    for old_node in old_nodes:
+        if old_node.text_type != TextType.NORMAL:
+            new_nodes.append(old_node)
             continue
-        
-        images = extract_markdown_images(node.text)
-        split_nodes = []
-        start = 0
-        
-        for alt_text, url in images:
-            start_idx = node.text.find(f"![{alt_text}]({url})", start)
-            if start_idx != -1:
-                split_nodes.append(TextNode(node.text[start:start_idx], TextType.NORMAL))
-                split_nodes.append(TextNode(alt_text, TextType.IMAGE, url))
-                start = start_idx + len(f"![{alt_text}]({url})")
-        split_nodes.append(TextNode(node.text[start:], TextType.NORMAL))
-        new_nodes.extend(split_nodes)
+        original_text = old_node.text
+        images = extract_markdown_images(original_text)
+        if len(images) == 0:
+            new_nodes.append(old_node)
+            continue
+        for image in images:
+            sections = original_text.split(f"![{image[0]}]({image[1]})", 1)
+            if len(sections) != 2:
+                raise ValueError("Invalid markdown, image section not closed")
+            if sections[0] != "":
+                new_nodes.append(TextNode(sections[0], TextType.NORMAL))
+            new_nodes.append(
+                TextNode(
+                    image[0],
+                    TextType.IMAGE,
+                    image[1],
+                )
+            )
+            original_text = sections[1]
+        if original_text != "":
+            new_nodes.append(TextNode(original_text, TextType.NORMAL))
     return new_nodes
 
 def split_nodes_link(old_nodes: list) -> list:
     new_nodes = []
-    for node in old_nodes:
-        if node.text_type != TextType.NORMAL:
-            new_nodes.append(node)
+    for old_node in old_nodes:
+        if old_node.text_type != TextType.NORMAL:
+            new_nodes.append(old_node)
             continue
-        
-        links = extract_markdown_links(node.text)
-        split_nodes = []
-        start = 0
-        
-        for link_text, url in links:
-            start_idx = node.text.find(f"[{link_text}]({url})", start)
-            if start_idx != -1:
-                split_nodes.append(TextNode(node.text[start:start_idx], TextType.NORMAL))
-                split_nodes.append(TextNode(link_text, TextType.LINK, url))
-                start = start_idx + len(f"[{link_text}]({url})")
-        split_nodes.append(TextNode(node.text[start:], TextType.NORMAL))
-        new_nodes.extend(split_nodes)
+        original_text = old_node.text
+        links = extract_markdown_links(original_text)
+        if len(links) == 0:
+            new_nodes.append(old_node)
+            continue
+        for link in links:
+            sections = original_text.split(f"[{link[0]}]({link[1]})", 1)
+            if len(sections) != 2:
+                raise ValueError("Invalid markdown, link section not closed")
+            if sections[0] != "":
+                new_nodes.append(TextNode(sections[0], TextType.NORMAL))
+            new_nodes.append(TextNode(link[0], TextType.LINK, link[1]))
+            original_text = sections[1]
+        if original_text != "":
+            new_nodes.append(TextNode(original_text, TextType.NORMAL))
     return new_nodes
 
 def text_to_text_nodes(text: str) -> list:
