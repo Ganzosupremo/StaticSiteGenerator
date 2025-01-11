@@ -47,7 +47,7 @@ def block_to_block_type(markdown:str) -> BlockType:
         return BlockType.Code
     return BlockType.Paragraph
 
-def markdown_to_html_node(markdown) -> ParentNode:
+def markdown_to_html_node(markdown:str) -> ParentNode:
     blocks = markdown_to_blocks(markdown)
     children = []
     for block in blocks:
